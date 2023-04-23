@@ -1,26 +1,27 @@
-import React from 'react';
-import logo from './logo.svg';
 import './App.css';
+import { configureSlice, useSlice } from './react-reducer-toolkit';
 
-function App() {
+const RootSlice = configureSlice({
+  defaultState: {
+    value: 0,
+  },
+  reducers: {
+    add: (state) => ({ ...state, value: state.value++ }),
+    subtract: (state) => ({ ...state, value: state.value-- }),
+  },
+});
+
+export function Root() {
+  const [state, actions] = useSlice(RootSlice, {
+    value: 0,
+  });
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <button onClick={actions.add}>Increment</button>
+      <button onClick={actions.subtract}>Decrement</button>
+      <div>Value: {state.value}</div>
     </div>
   );
 }
 
-export default App;
+export default Root;
