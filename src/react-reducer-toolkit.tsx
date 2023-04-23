@@ -1,6 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+export type Prettify<T> = T extends infer O
+  ? { [K in keyof O]: O[K] } & {}
+  : never;
 
+export type DeepPrettify<T> = T extends infer O
+  ? {
+      [K in keyof O]: T[K] extends Object ? Prettify<T[K]> : T[K];
+    }
+  : never;
 export const useIdentityLogger = (tag: string, variable: any) => {
   useEffect(() => {
     console.debug(tag, variable);
@@ -37,7 +45,7 @@ type ActionCreator<P = any> =
   | ActionCreatorWithPayload<P>;
 
 type Handler<TState, TAction = any> = (
-  state: TState,
+  state: Readonly<TState>,
   action: TAction
 ) => TState;
 
@@ -47,6 +55,7 @@ type SliceConfiguration<
 > = {
   defaultState: TState;
   reducers: TReducers;
+  useImmer?: boolean;
 };
 
 type Slice<TState, TActions extends Record<string, any>> = {
@@ -66,7 +75,7 @@ type InferActionCreatorType<H, ActionName extends string> = H extends (
     : ActionCreatorWithoutPayload<ActionName>
   : ActionCreatorWithNonInferrablePayload;
 
-function configureSlice<
+function defineReactSlice<
   TState,
   TReducers extends {
     [actionName: string]: Handler<TState>;
@@ -105,14 +114,23 @@ function configureSlice<
   };
 }
 
-function useSlice<TState, TActions extends Record<string, any>>(
+type Dispatch = (action: any) => any;
+type MiddlewareAPI<TState> = { getState: () => TState; dispatch: Dispatch };
+
+type Middleware<TState> = (
+  api: MiddlewareAPI<TState>
+) => (next: Dispatch) => Dispatch;
+
+function useReactSlice<TState, TActions extends Record<string, any>>(
   { actions, reducer, defaultInitialState }: Slice<TState, TActions>,
-  initialState?: TState
+  initialState?: TState,
+  middleware: Middleware<TState>[] = []
 ) {
-  const [state, dispatch] = useReducer(
-    reducer,
-    initialState || defaultInitialState
+  const initialValue = useRef(
+    structuredClone(initialState || defaultInitialState)
   );
+
+  const [state, dispatch] = useReducer(reducer, initialValue.current);
 
   const boundActions = useMemo(() => {
     return Object.keys(actions).reduce((acc, actionName) => {
@@ -124,4 +142,4 @@ function useSlice<TState, TActions extends Record<string, any>>(
   return [state, boundActions as TActions] as const;
 }
 
-export { configureSlice, useSlice };
+export { defineReactSlice, useReactSlice };
