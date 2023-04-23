@@ -11,7 +11,8 @@ interface Action<TType extends string = string> {
   type: TType;
 }
 
-interface PayloadAction<P, Type extends string = string> extends Action<Type> {
+export interface PayloadAction<P, Type extends string = string>
+  extends Action<Type> {
   payload: P;
 }
 interface BaseActionCreator<P, T extends string, M = never, E = never> {
@@ -60,9 +61,9 @@ type InferActionCreatorType<H, ActionName extends string> = H extends (
   state: any,
   action: PayloadAction<infer P>
 ) => any
-  ? P extends unknown
-    ? ActionCreatorWithoutPayload<ActionName>
-    : ActionCreatorWithPayload<P, ActionName>
+  ? P extends {}
+    ? ActionCreatorWithPayload<P, ActionName>
+    : ActionCreatorWithoutPayload<ActionName>
   : ActionCreatorWithNonInferrablePayload;
 
 function configureSlice<
